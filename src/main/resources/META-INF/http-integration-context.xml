@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-http="http://www.springframework.org/schema/integration/http"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="jsonSender" />
+    <int:channel id="jsonSender2" />
+    <int:channel id="httpSender" />
+    <int:channel id="httpReceiver">
+        <int:queue capacity="30" />
+    </int:channel>
+    <int:poller default="true" fixed-delay="50"/>
+
+    <int-http:inbound-gateway id="inboundSender" request-channel="httpSender" reply-channel="httpReceiver" path="/receive-data"
+                              supported-methods="GET"  >
+        <int-http:request-mapping produces="application/json" />
+    </int-http:inbound-gateway>
+
+    <int:chain input-channel="httpSender" output-channel="httpReceiver">
+        <int:transformer ref="httpServletRequestToProductTransformer" method="transformRequest" />
+        <int:object-to-json-transformer />
+    </int:chain>
+
+    <!-- inbound : sans retourner la réponse -->
+    <int-http:inbound-channel-adapter channel="jsonSender" supported-methods="POST" path="/handle-params"  />
+    <int:chain input-channel="jsonSender" output-channel="httpReceiver">
+        <int:json-to-object-transformer type="com.waitingforcode.model.Product" />
+        <int:service-activator ref="productActivator" method="handleFromJson" requires-reply="true" />
+    </int:chain>
+
+    <!-- If your outbound adapter is to be used in a unidirectional way, then you can use an outbound-channel-adapter instead. This means that a successful response will simply execute without sending any Messages to a reply channel. In the case of any non-successful response status code, it will throw an exception. The configuration looks very similar to the gateway
+    Va pas envoyer un Message au channel reply -->
+    <int-http:outbound-channel-adapter id="channAdaptER" url="http://integration-sample.lcom:8080/receiver-tpl-data" channel="jsonSender2"
+                                       http-method="POST" extract-payload="true"
+                                       message-converters="productHttpMessageConverter"  />
+
+</beans>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="sender1" />
+    <int:channel id="receiver1">
+        <int:queue capacity="30" />
+    </int:channel>
+
+    <!-- sample configuration for outbound channel adapter. Note that channel attribute here means
+    the channel sending the message.
+    -->
+    <int:outbound-channel-adapter channel="sender1" ref="productChannelAdapter" method="handleProduct" />
+
+    <!-- sample configuration for inbound channel adapter. This adapter is applied to channel receiving the messages -->
+    <int:inbound-channel-adapter ref="productChannelAdapter" method="prepareToFurtherSend" channel="receiver1">
+        <int:poller fixed-rate="2000" />
+    </int:inbound-channel-adapter>
+
+</beans>

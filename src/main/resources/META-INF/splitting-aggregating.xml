@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="sender" />
+    <int:channel id="receiver">
+        <int:queue capacity="10" />
+    </int:channel>
+
+    <int:chain id="senderReceiverSample" input-channel="sender" output-channel="receiver" auto-startup="true">
+        <int:splitter id="orderSplitter" ref="orderComponentsSplitter"  />
+        <int:service-activator ref="productActivator" method="quoteForTheBestPrice" requires-reply="true" />
+        <int:aggregator id="orderAggregator" correlation-strategy="orderComponentsCorrelationStrategy"
+                        release-strategy="orderComponentsReleaseStrategy" ref="orderComponentsAggregator" />
+    </int:chain>
+</beans>

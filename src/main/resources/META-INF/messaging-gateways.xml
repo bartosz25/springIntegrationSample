@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="inputBookingChannel" />
+    <int:channel id="inputSellingChannel" />
+    <int:channel id="inputBuyingChannel" />
+    <int:channel id="outputBookingChannel">
+        <int:queue capacity="10"/>
+    </int:channel>
+    <int:channel id="outputSellingChannel">
+        <int:queue capacity="10"/>
+    </int:channel>
+    <int:channel id="outputBuyingChannel">
+        <int:queue capacity="10"/>
+    </int:channel>
+
+    <int:gateway service-interface="com.waitingforcode.services.ProductService" id="bookProduct" />
+
+    <int:service-activator input-channel="inputBookingChannel" ref="productActivator" requires-reply="true"
+                           output-channel="outputBookingChannel" method="handleBookingProduct" />
+    <int:service-activator input-channel="inputSellingChannel" ref="productActivator" requires-reply="true"
+                           output-channel="outputSellingChannel" method="handleSellingProduct" />
+    <int:service-activator input-channel="inputBuyingChannel" ref="productActivator" requires-reply="true"
+                           output-channel="outputBuyingChannel" method="handleBuyingProduct" />
+</beans>

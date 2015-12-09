@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="directChannel" />
+    <int:channel id="stockCheckingChannel" datatype="com.waitingforcode.model.ProductWrapper"
+                 message-converter="productWrapperConverter">
+        <!-- thanks to this configuration we can disable failover -->
+        <int:dispatcher failover="false"/>
+    </int:channel>
+    <int:channel id="channelNoSubscriber" />
+    <int:channel id="anotherDirectChannel" />
+
+    <int:service-activator input-channel="directChannel" ref="sampleActivator"
+                           method="sampleHandler" />
+    <int:service-activator input-channel="anotherDirectChannel" output-channel="stringOutputChannel" ref="sampleActivator" method="handlerWithReturn" />
+    <int:service-activator input-channel="stockCheckingChannel" ref="productWrapperActivator" />
+</beans>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="staticSender" />
+    <int:channel id="staticSenderNoFailing" />
+    <int:channel id="sender" />
+    <int:channel id="senderRouting" />
+    <int:channel id="senderRoutingSelector" />
+    <int:channel id="receiverCheapOrders">
+        <int:queue />
+    </int:channel>
+    <int:channel id="receiverExpensiveOrders">
+        <int:queue />
+    </int:channel>
+    <int:channel id="recipient1">
+        <int:queue />
+    </int:channel>
+    <int:channel id="recipient2">
+        <int:queue />
+    </int:channel>
+
+    <!-- case of static router, based on fixed configured values -->
+    <int:router id="staticRouter" input-channel="staticSender" expression="payload.id" resolution-required="true">
+        <int:mapping value="30" channel="receiverExpensiveOrders" />
+    </int:router>
+    <int:router id="staticRouterNoFailing" input-channel="staticSenderNoFailing" expression="payload.id"
+                resolution-required="false">
+        <int:mapping value="30" channel="receiverExpensiveOrders" />
+    </int:router>
+
+    <!-- thanks to this router, we can send one message to a list of defined recipients -->
+    <int:recipient-list-router id="recipientRouter" input-channel="senderRouting">
+        <int:recipient channel="recipient1" />
+        <int:recipient channel="recipient2" />
+    </int:recipient-list-router>
+
+    <!-- recipient router list with dynamic selector expression -->
+    <int:recipient-list-router id="recipientWithSelector" input-channel="senderRoutingSelector">
+        <int:recipient channel="recipient1" selector-expression="payload.finalPrice le 50" />
+        <int:recipient channel="recipient2" selector-expression="payload.finalPrice gt 50" />
+    </int:recipient-list-router>
+
+
+    <!-- case of dynamic router which analyzes message's payload and chooses appropriate route -->
+    <int:router method="resolveOrderRoute" input-channel="sender" resolution-required="true" ref="orderChannelRouter" />
+
+</beans>

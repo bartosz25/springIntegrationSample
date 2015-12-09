@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:beans="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="com.waitingforcode"/>
+
+    <int:channel id="sender" />
+    <int:channel id="receiver">
+        <int:queue capacity="10" />
+    </int:channel>
+    <int:channel id="trash">
+        <int:queue capacity="10" />
+    </int:channel>
+    <int:channel id="senderForNested" />
+    <int:channel id="receiverForNested">
+        <int:queue capacity="10" />
+    </int:channel>
+    <int:channel id="senderForNested1" />
+    <int:channel id="senderForNested2" />
+
+
+    <int:chain id="senderReceiverSample" input-channel="sender" output-channel="receiver">
+        <int:header-enricher>
+            <int:header name="enriched" value="xxx"/>
+        </int:header-enricher>
+        <int:filter ref="coffeeFilter" throw-exception-on-rejection="true" discard-channel="trash" />
+        <int:service-activator ref="productActivator" requires-reply="true"
+                               method="handleBookingProduct"/>
+    </int:chain>
+
+    <!-- Sample configuration for nested chain call with gateway element. -->
+    <int:chain id="mainSenderReceiver" input-channel="senderForNested" output-channel="receiverForNested">
+        <int:header-enricher>
+            <int:header name="main-channel" ref="timeEnricher" method="appendAccessTime" />
+        </int:header-enricher>
+        <int:filter ref="coffeeFilter" />
+        <int:gateway request-channel="senderForNested1" />
+    </int:chain>
+    <int:chain id="nested1SenderReceiver" input-channel="senderForNested1">
+        <int:header-enricher>
+            <int:header name="nested-1" ref="timeEnricher" method="appendAccessTime" />
+        </int:header-enricher>
+        <int:gateway request-channel="senderForNested2"  />
+    </int:chain>
+    <int:chain id="nested2SenderReceiver" input-channel="senderForNested2">
+        <int:header-enricher>
+            <int:header name="nested-2" ref="timeEnricher" method="appendAccessTime"/>
+        </int:header-enricher>
+    </int:chain>
+
+    <bean id="coffeeFilter" class="org.springframework.integration.filter.MessageFilter" scope="prototype">
+        <constructor-arg ref="coffeeSelector" />
+    </bean>
+
+</beans>
